@@ -199,6 +199,8 @@ jobs:
           export CC=clang
           export LD=ld.lld
 
+          sed -i -E 's/^EXTRAVERSION[[:space:]]*=.*/EXTRAVERSION =/' Makefile
+
           # Free runner disk
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost /usr/share/swift || true
           free -h
@@ -222,19 +224,7 @@ jobs:
               "arch/arm64/configs/vendor/${device}_GKI.config"
 
             ./scripts/config --file "${out_dir}/.config" \
-              -d LTO_CLANG \
-              -d LTO_NONE \
-              -d THINLTO \
-              -d ARCH_SUPPORTS_LTO_CLANG \
-              -d ARCH_SUPPORTS_LTO_CLANG_THIN \
-              -d HAS_LTO_CLANG \
-              -e LTO_CLANG_THIN
-
-            ./scripts/config --file "${out_dir}/.config" \
-              --set-str LOCALVERSION "" \
-              --set-str LOCALVERSION_AUTO "n"
-
-            sed -i '217s/^[[:space:]]*echo "$res"[[:space:]]*$/res="${res\/-gki+\/}"\necho "$res"/' scripts/setlocalversion
+              --set-str LOCALVERSION "-PhoenyxCore.LTO.${VERSION_TAG}"
 
             make O="${out_dir}" ARCH=arm64 LLVM=1 LLVM_IAS=1 olddefconfig
             echo "Kernel release: $(make O="${out_dir}" ARCH=arm64 LLVM=1 LLVM_IAS=1 -s kernelrelease)"
