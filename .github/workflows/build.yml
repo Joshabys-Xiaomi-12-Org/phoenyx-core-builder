@@ -252,13 +252,25 @@ jobs:
 
           mkdir -p release-pkg
           for device in "${devices[@]}"; do
+            kernel_release_file="kernel/xiaomi/sm8450/out-${device}/include/config/kernel.release"
+            if [[ ! -s "${kernel_release_file}" ]]; then
+              echo "::error::Kernel release file not found for ${device}: ${kernel_release_file}"
+              exit 1
+            fi
+            kernel_release="$(<"${kernel_release_file}")"
+            if [[ ! "${kernel_release}" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              echo "::error::Could not extract kernel version from '${kernel_release}' for ${device}."
+              exit 1
+            fi
+            kernel_version="${BASH_REMATCH[1]}"
+
             package_dir="ak3-pkg-${device}"
             git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git "${package_dir}"
             cp "kernel/xiaomi/sm8450/out-${device}/arch/arm64/boot/Image" "${package_dir}/Image"
             cp -f ak3/anykernel.sh "${package_dir}/anykernel.sh"
             sed -i "s|^kernel\\.string=TITLE$|kernel.string=PhoenyxCore ${VERSION_TAG} (${device}) - Build ${BUILD_DATE} - By tg@Joshaby (http://t.me/Joshaby)|" "${package_dir}/anykernel.sh"
 
-            zip_name="PhoenyxCore-${VERSION_TAG}-${device}-${BUILD_TIME}.zip"
+            zip_name="PhoenyxCore-${VERSION_TAG}-${kernel_version}-${device}-${BUILD_TIME}.zip"
             (cd "${package_dir}" && zip -r9 "../${zip_name}" . -x ".git/*" "README.md")
             sha256sum "${zip_name}" > "${zip_name}.sha256"
             mv "${zip_name}" "${zip_name}.sha256" release-pkg/
